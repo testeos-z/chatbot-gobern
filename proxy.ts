@@ -9,6 +9,15 @@ export async function proxy(request: NextRequest) {
     return new Response("pong", { status: 200 });
   }
 
+  // Modo lite: no usa Auth.js, no usa DB, no crea guest user.
+  if (
+    pathname === "/" ||
+    pathname.startsWith("/legislativo-chat") ||
+    pathname.startsWith("/api/legislativo-chat")
+  ) {
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith("/api/auth")) {
     return NextResponse.next();
   }

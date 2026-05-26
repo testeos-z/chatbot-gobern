@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ConditionalSessionProvider } from "@/components/conditional-session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
-import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chat.vercel.ai"),
-  title: "Next.js Chatbot Template",
-  description: "Next.js chatbot template using the AI SDK.",
+  title: "Chat Legislativo",
+  description: "Chat Legislativo usando AI SDK.",
 };
 
 export const viewport = {
@@ -56,7 +56,7 @@ export default function RootLayout({
   return (
     <html
       className={`${geist.variable} ${geistMono.variable}`}
-      lang="en"
+      lang="es"
       suppressHydrationWarning
     >
       <head>
@@ -67,6 +67,7 @@ export default function RootLayout({
           }}
         />
       </head>
+
       <body className="antialiased">
         <ThemeProvider
           attribute="class"
@@ -74,11 +75,9 @@ export default function RootLayout({
           disableTransitionOnChange
           enableSystem
         >
-          <SessionProvider
-            basePath={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/auth`}
-          >
+          <ConditionalSessionProvider>
             <TooltipProvider>{children}</TooltipProvider>
-          </SessionProvider>
+          </ConditionalSessionProvider>
         </ThemeProvider>
       </body>
     </html>
