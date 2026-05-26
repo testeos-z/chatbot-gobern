@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import { ConditionalSessionProvider } from "@/components/conditional-session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,9 +8,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://chat.vercel.ai"),
-  title: "Chat Legislativo",
-  description: "Chat Legislativo usando AI SDK.",
+  metadataBase: new URL("https://gobern.ai"),
+  title: "Gobern.AI — Chat Legislativo",
+  description: "Asistente legislativo inteligente potenciado por Gobern.AI.",
 };
 
 export const viewport = {
@@ -75,9 +76,11 @@ export default function RootLayout({
           disableTransitionOnChange
           enableSystem
         >
-          <ConditionalSessionProvider>
-            <TooltipProvider>{children}</TooltipProvider>
-          </ConditionalSessionProvider>
+          <Suspense>
+            <ConditionalSessionProvider>
+              <TooltipProvider>{children}</TooltipProvider>
+            </ConditionalSessionProvider>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

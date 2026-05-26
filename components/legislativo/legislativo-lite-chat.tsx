@@ -6,6 +6,7 @@ import {
   SquareIcon,
   Trash2Icon,
 } from "lucide-react";
+// SVG con PNG embebido — se usa <img> directo para evitar hidratación (<next/image> no optimiza SVG)
 import type { FormEvent } from "react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -131,12 +132,17 @@ export function LegislativoLiteChat() {
 
   return (
     <main className="flex min-h-dvh flex-col bg-background text-foreground">
-      <header className="border-b border-border/40 px-4 py-4 md:px-8">
+      <header className="border-b border-border/40 px-4 py-3 md:px-8">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
-              Chat legislativo
-            </h1>
+          <div className="flex items-center gap-3">
+            <img
+              alt="Gobern.AI"
+              className="h-14 w-auto sm:h-16 md:h-20"
+              src="/images/logotipo.svg"
+            />
+            <span className="hidden text-sm font-medium text-muted-foreground sm:inline">
+              Legislativo
+            </span>
           </div>
 
           <Button
