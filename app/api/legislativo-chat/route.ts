@@ -80,8 +80,7 @@ export async function POST(request: Request) {
     if (!flowiseApiUrl || !chatflowId) {
       return Response.json(
         {
-          error:
-            "Faltan FLOWISE_API_URL o FLOWISE_CHATFLOW_ID en .env.local",
+          error: "Ocurrió un error inesperado. Por favor, intenta de nuevo.",
         },
         { status: 500 }
       );
@@ -110,8 +109,7 @@ export async function POST(request: Request) {
 
       return Response.json(
         {
-          error: `Flowise respondió con error ${response.status}`,
-          details: errorText,
+          error: "Ocurrió un error inesperado. Por favor, intenta de nuevo.",
         },
         { status: response.status }
       );
@@ -125,7 +123,7 @@ export async function POST(request: Request) {
     console.error("Error en legislativo-chat Flowise:", error);
 
     return Response.json(
-      { error: "Error conectando con Flowise" },
+      { error: "Ocurrió un error inesperado. Por favor, intenta de nuevo." },
       { status: 500 }
     );
   }

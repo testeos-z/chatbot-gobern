@@ -80,15 +80,13 @@ export function LegislativoLiteChat() {
       const data = (await response.json()) as ApiResponse;
 
       if (!response.ok) {
-        throw new Error(
-          data.details || data.error || `Error HTTP ${response.status}`
-        );
+        throw new Error("Ocurrió un error inesperado. Por favor, intenta de nuevo.");
       }
 
       const assistantText = data.text?.trim();
 
       if (!assistantText) {
-        throw new Error("Flowise no devolvió una respuesta de texto.");
+        throw new Error("Ocurrió un error inesperado. Por favor, intenta de nuevo.");
       }
 
       const assistantMessage: ChatMessage = {
@@ -112,7 +110,7 @@ export function LegislativoLiteChat() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Ocurrió un error conectando con Flowise."
+          : "Ocurrió un error inesperado. Por favor, intenta de nuevo."
       );
     } finally {
       setIsLoading(false);
