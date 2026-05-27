@@ -2,13 +2,16 @@
 
 import {
   Loader2Icon,
+  MoonIcon,
   SendIcon,
   SquareIcon,
+  SunIcon,
   Trash2Icon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 // SVG con PNG embebido — se usa <img> directo para evitar hidratación (<next/image> no optimiza SVG)
 import type { FormEvent } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -38,7 +41,22 @@ export function LegislativoLiteChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [mounted, setMounted] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const { theme, setTheme } = useTheme();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Evitar hidratación del toggle de tema
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Scroll al fondo cuando llega un nuevo mensaje
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -129,103 +147,134 @@ export function LegislativoLiteChat() {
   }
 
   return (
-    <main className="flex min-h-dvh flex-col bg-background text-foreground">
-      <header className="border-b border-border/40 px-4 py-3 md:px-8">
+    <div className="flex h-dvh flex-col bg-background text-foreground">
+      {/* Header sticky con glass-blur */}
+      <header className="sticky top-0 z-10 border-b border-border/40 bg-background/80 px-4 py-3 backdrop-blur-xl md:px-8">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img
-              alt="Gobern.AI"
-              className="h-14 w-auto sm:h-16 md:h-20"
-              src="/images/logotipo.svg"
-            />
-            <span className="hidden text-sm font-medium text-muted-foreground sm:inline">
+            <div className="rounded-md bg-[#000F17] p-0.5">
+              <img
+                alt="Gobern.AI"
+                className="h-14 w-auto sm:h-16 md:h-20"
+                src="/images/logotipo.svg"
+              />
+            </div>
+            <span className="hidden text-base font-semibold text-primary sm:inline">
               Legislativo
             </span>
           </div>
 
-          <Button
-            disabled={messages.length === 0 || isLoading}
-            onClick={handleClear}
-            type="button"
-            variant="outline"
-          >
-            <Trash2Icon className="mr-2 size-4" />
-            Limpiar
-          </Button>
-        </div>
-      </header>
-
-      <section className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-4 py-6 md:px-8">
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto rounded-2xl border border-border/40 bg-card/30 p-4">
-          {messages.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center text-center text-sm text-muted-foreground">
-              Haz una pregunta legislativa o pega un texto para analizarlo.
-            </div>
-          ) : (
-            messages.map((message) => (
-              <div
-                className={cn(
-                  "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                  message.role === "user"
-                    ? "ml-auto bg-primary text-primary-foreground"
-                    : "mr-auto border border-border/40 bg-background"
-                )}
-                key={message.id}
-              >
-                {message.content}
-              </div>
-            ))
-          )}
-
-          {isLoading && (
-            <div className="mr-auto flex items-center gap-2 rounded-2xl border border-border/40 bg-background px-4 py-3 text-sm text-muted-foreground">
-              <Loader2Icon className="size-4 animate-spin" />
-              Consultando Información...
-            </div>
-          )}
-        </div>
-
-        {errorMessage && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {errorMessage}
-          </div>
-        )}
-
-        <form className="flex gap-2" onSubmit={handleSubmit}>
-          <Textarea
-            className="min-h-24 resize-none rounded-2xl"
-            disabled={isLoading}
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                event.currentTarget.form?.requestSubmit();
-              }
-            }}
-            placeholder="Escribe tu petición..."
-            value={input}
-          />
-
-          {isLoading ? (
+          <div className="flex items-center gap-2">
+            {/* Toggle claro/oscuro */}
             <Button
-              className="h-auto rounded-2xl px-4"
-              onClick={handleStop}
+              className="size-9 rounded-xl"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              size="icon"
               type="button"
               variant="outline"
             >
-              <SquareIcon className="size-4" />
+              {mounted && theme === "dark" ? (
+                <SunIcon className="size-4" />
+              ) : (
+                <MoonIcon className="size-4" />
+              )}
             </Button>
-          ) : (
+
             <Button
-              className="h-auto rounded-2xl px-4"
-              disabled={!input.trim()}
-              type="submit"
+              disabled={messages.length === 0 || isLoading}
+              onClick={handleClear}
+              type="button"
+              variant="outline"
             >
-              <SendIcon className="size-4" />
+              <Trash2Icon className="mr-2 size-4" />
+              Limpiar
             </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Área de mensajes scrolleable */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 py-6 md:px-8"
+      >
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+          <div className="flex flex-1 flex-col gap-4 rounded-2xl border border-border/40 bg-card/30 p-4">
+            {messages.length === 0 ? (
+              <div className="flex flex-1 items-center justify-center py-16 text-center text-sm text-muted-foreground">
+                Haz una pregunta legislativa o pega un texto para analizarlo.
+              </div>
+            ) : (
+              messages.map((message) => (
+                <div
+                  className={cn(
+                    "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed",
+                    message.role === "user"
+                      ? "ml-auto bg-primary text-primary-foreground"
+                      : "mr-auto border border-border/40 bg-background"
+                  )}
+                  key={message.id}
+                >
+                  {message.content}
+                </div>
+              ))
+            )}
+
+            {isLoading && (
+              <div className="mr-auto flex items-center gap-2 rounded-2xl border border-border/40 bg-background px-4 py-3 text-sm text-muted-foreground">
+                <Loader2Icon className="size-4 animate-spin" />
+                Consultando Información...
+              </div>
+            )}
+          </div>
+
+          {errorMessage && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {errorMessage}
+            </div>
           )}
-        </form>
-      </section>
-    </main>
+        </div>
+      </div>
+
+      {/* Formulario siempre visible al fondo */}
+      <div className="border-t border-border/40 bg-background px-4 py-4 md:px-8">
+        <div className="mx-auto flex w-full max-w-4xl">
+          <form className="flex w-full gap-2" onSubmit={handleSubmit}>
+            <Textarea
+              className="min-h-20 resize-none rounded-2xl"
+              disabled={isLoading}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
+              placeholder="Escribe tu petición..."
+              value={input}
+            />
+
+            {isLoading ? (
+              <Button
+                className="h-auto rounded-2xl px-4"
+                onClick={handleStop}
+                type="button"
+                variant="outline"
+              >
+                <SquareIcon className="size-4" />
+              </Button>
+            ) : (
+              <Button
+                className="h-auto rounded-2xl px-4"
+                disabled={!input.trim()}
+                type="submit"
+              >
+                <SendIcon className="size-4" />
+              </Button>
+            )}
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }
