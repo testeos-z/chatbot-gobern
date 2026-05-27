@@ -152,13 +152,11 @@ export function LegislativoLiteChat() {
       <header className="sticky top-0 z-10 border-b border-border/40 bg-background/80 px-4 py-3 backdrop-blur-xl md:px-8">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-md bg-[#000F17] p-0.5">
-              <img
-                alt="Gobern.AI"
-                className="h-14 w-auto sm:h-16 md:h-20"
-                src="/images/logotipo.svg"
-              />
-            </div>
+            <img
+              alt="Gobern.AI"
+              className="h-14 w-auto sm:h-16 md:h-20"
+              src={mounted && theme === "dark" ? "/images/logotipo.svg" : "/images/logotipoDark.svg"}
+            />
             <span className="hidden text-base font-semibold text-primary sm:inline">
               Legislativo
             </span>
