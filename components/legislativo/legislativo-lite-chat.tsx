@@ -98,13 +98,17 @@ export function LegislativoLiteChat() {
       const data = (await response.json()) as ApiResponse;
 
       if (!response.ok) {
-        throw new Error("Ocurrió un error inesperado. Por favor, intenta de nuevo.");
+        throw new Error(
+          "Ocorreu um erro inesperado. Por favor, tente novamente."
+        );
       }
 
       const assistantText = data.text?.trim();
 
       if (!assistantText) {
-        throw new Error("Ocurrió un error inesperado. Por favor, intenta de nuevo.");
+        throw new Error(
+          "Ocorreu um erro inesperado. Por favor, tente novamente."
+        );
       }
 
       const assistantMessage: ChatMessage = {
@@ -113,22 +117,19 @@ export function LegislativoLiteChat() {
         content: assistantText,
       };
 
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        assistantMessage,
-      ]);
+      setMessages((currentMessages) => [...currentMessages, assistantMessage]);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
-        setErrorMessage("Respuesta detenida.");
+        setErrorMessage("Resposta interrompida.");
         return;
       }
 
-      console.error("Error enviando mensaje:", error);
+      console.error("Erro a enviar a mensagem:", error);
 
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Ocurrió un error inesperado. Por favor, intenta de nuevo."
+          : "Ocorreu um erro inesperado. Por favor, tente novamente."
       );
     } finally {
       setIsLoading(false);
@@ -155,7 +156,11 @@ export function LegislativoLiteChat() {
             <img
               alt="Gobern.AI"
               className="h-14 w-auto sm:h-16 md:h-20"
-              src={mounted && theme === "dark" ? "/images/logotipo.svg" : "/images/logotipoDark.svg"}
+              src={
+                mounted && theme === "dark"
+                  ? "/images/logotipo.svg"
+                  : "/images/logotipoDark.svg"
+              }
             />
             <span className="hidden text-base font-semibold text-primary sm:inline">
               Legislativo
@@ -185,22 +190,19 @@ export function LegislativoLiteChat() {
               variant="outline"
             >
               <Trash2Icon className="mr-2 size-4" />
-              Limpiar
+              Limpar
             </Button>
           </div>
         </div>
       </header>
 
       {/* Área de mensajes scrolleable */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-6 md:px-8"
-      >
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8" ref={scrollRef}>
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
           <div className="flex flex-1 flex-col gap-4 rounded-2xl border border-border/40 bg-card/30 p-4">
             {messages.length === 0 ? (
               <div className="flex flex-1 items-center justify-center py-16 text-center text-sm text-muted-foreground">
-                Haz una pregunta legislativa o pega un texto para analizarlo.
+                Faça uma pergunta legislativa ou cole um texto para análise
               </div>
             ) : (
               messages.map((message) => (
@@ -220,8 +222,8 @@ export function LegislativoLiteChat() {
 
             {isLoading && (
               <div className="mr-auto flex items-center gap-2 rounded-2xl border border-border/40 bg-background px-4 py-3 text-sm text-muted-foreground">
-                <Loader2Icon className="size-4 animate-spin" />
-                Consultando Información...
+                <Loader2Icon className="size-4 animate-spin" />A consultar
+                informação...
               </div>
             )}
           </div>
@@ -248,7 +250,7 @@ export function LegislativoLiteChat() {
                   event.currentTarget.form?.requestSubmit();
                 }
               }}
-              placeholder="Escribe tu petición..."
+              placeholder="Escreva a sua pergunta..."
               value={input}
             />
 

@@ -10,7 +10,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://gobern.ai"),
   title: "Gobern.AI — Chat Legislativo",
-  description: "Asistente legislativo inteligente potenciado por Gobern.AI.",
+  description: "Assistente legislativo inteligente potenciado por Gobern.AI.",
 };
 
 export const viewport = {
@@ -57,7 +57,7 @@ export default function RootLayout({
   return (
     <html
       className={`${geist.variable} ${geistMono.variable}`}
-      lang="es"
+      lang="pt-PT"
       suppressHydrationWarning
     >
       <head>

@@ -1,7 +1,7 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import { SessionProvider } from "next-auth/react";
 
 export function ConditionalSessionProvider({
   children,

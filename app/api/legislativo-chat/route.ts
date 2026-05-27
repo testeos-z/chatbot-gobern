@@ -67,10 +67,7 @@ export async function POST(request: Request) {
     const question = getLastUserMessage(body.messages);
 
     if (!question.trim()) {
-      return Response.json(
-        { error: "No question provided" },
-        { status: 400 }
-      );
+      return Response.json({ error: "No question provided" }, { status: 400 });
     }
 
     const flowiseApiUrl = process.env.FLOWISE_API_URL;
@@ -80,7 +77,7 @@ export async function POST(request: Request) {
     if (!flowiseApiUrl || !chatflowId) {
       return Response.json(
         {
-          error: "Ocurrió un error inesperado. Por favor, intenta de nuevo.",
+          error: "Ocorreu um erro inesperado. Por favor, tente novamente.",
         },
         { status: 500 }
       );
@@ -109,7 +106,7 @@ export async function POST(request: Request) {
 
       return Response.json(
         {
-          error: "Ocurrió un error inesperado. Por favor, intenta de nuevo.",
+          error: "Ocorreu um erro inesperado. Por favor, tente novamente.",
         },
         { status: response.status }
       );
@@ -123,7 +120,7 @@ export async function POST(request: Request) {
     console.error("Error en legislativo-chat Flowise:", error);
 
     return Response.json(
-      { error: "Ocurrió un error inesperado. Por favor, intenta de nuevo." },
+      { error: "Ocorreu um erro inesperado. Por favor, tente novamente." },
       { status: 500 }
     );
   }
