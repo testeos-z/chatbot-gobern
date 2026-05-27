@@ -43,12 +43,22 @@ export function LegislativoLiteChat() {
   const [errorMessage, setErrorMessage] = useState("");
   const [mounted, setMounted] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+  const userStopRef = useRef(false);
   const { theme, setTheme } = useTheme();
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Evitar hidratación del toggle de tema
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Cleanup ao desmontar: aborta qualquer request pendente
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   // Scroll al fondo cuando llega un nuevo mensaje
@@ -79,9 +89,13 @@ export function LegislativoLiteChat() {
     setInput("");
     setIsLoading(true);
     setErrorMessage("");
+    userStopRef.current = false;
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
+
+    // Timeout de 90s: se a tab ficar em segundo plano, a request não morre
+    const timeoutId = setTimeout(() => abortController.abort(), 90_000);
 
     try {
       const response = await fetch("/api/legislativo-chat", {
@@ -94,6 +108,8 @@ export function LegislativoLiteChat() {
           messages: nextMessages,
         }),
       });
+
+      clearTimeout(timeoutId);
 
       const data = (await response.json()) as ApiResponse;
 
@@ -117,10 +133,29 @@ export function LegislativoLiteChat() {
         content: assistantText,
       };
 
-      setMessages((currentMessages) => [...currentMessages, assistantMessage]);
+      setMessages((currentMessages) => {
+        if (!mountedRef.current) return currentMessages;
+        return [...currentMessages, assistantMessage];
+      });
     } catch (error) {
+      // Componente desmontado — não atualiza estado
+      if (!mountedRef.current) return;
+
       if (error instanceof DOMException && error.name === "AbortError") {
-        setErrorMessage("Resposta interrompida.");
+        // Utilizador cancelou manualmente — silencioso
+        if (userStopRef.current) return;
+        // Timeout — avisa o utilizador
+        setErrorMessage(
+          "A resposta está a demorar mais do que o esperado. Por favor, tente novamente."
+        );
+        return;
+      }
+
+      // Navegação ou perda de conexão — mostra erro com opção de reenviar
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        setErrorMessage(
+          "A ligação foi interrompida. Por favor, verifique a sua conexão e tente novamente."
+        );
         return;
       }
 
@@ -132,12 +167,15 @@ export function LegislativoLiteChat() {
           : "Ocorreu um erro inesperado. Por favor, tente novamente."
       );
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
       abortControllerRef.current = null;
     }
   }
 
   function handleStop() {
+    userStopRef.current = true;
     abortControllerRef.current?.abort();
     setIsLoading(false);
   }
