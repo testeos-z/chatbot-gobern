@@ -26,7 +26,10 @@ type ApiResponse = {
   text?: string;
   error?: string;
   details?: string;
+  messages?: ChatMessage[];
 };
+
+const LEGISLATIVO_CHAT_API_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/legislativo-chat`;
 
 function createId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -40,6 +43,8 @@ export function LegislativoLiteChat() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+  const [isResetting, setIsResetting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [mounted, setMounted] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -53,15 +58,59 @@ export function LegislativoLiteChat() {
     setMounted(true);
   }, []);
 
-  // Cleanup ao desmontar: aborta qualquer request pendente
+  // Carrega o histórico da sessão atual e aborta requests ao desmontar.
   useEffect(() => {
+    let isActive = true;
+    const historyAbortController = new AbortController();
+    mountedRef.current = true;
+
+    async function loadHistory() {
+      try {
+        const response = await fetch(LEGISLATIVO_CHAT_API_URL, {
+          method: "GET",
+          credentials: "same-origin",
+          signal: historyAbortController.signal,
+        });
+        const data = (await response.json()) as ApiResponse;
+
+        if (!response.ok) {
+          throw new Error("Não foi possível carregar o histórico da conversa.");
+        }
+
+        if (isActive) {
+          setMessages(Array.isArray(data.messages) ? data.messages : []);
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        console.error("Erro a carregar o histórico:", error);
+
+        if (isActive) {
+          setErrorMessage(
+            "Não foi possível carregar o histórico da conversa. Por favor, recarregue a página."
+          );
+        }
+      } finally {
+        if (isActive) {
+          setIsHistoryLoading(false);
+        }
+      }
+    }
+
+    loadHistory();
+
     return () => {
+      isActive = false;
       mountedRef.current = false;
+      historyAbortController.abort();
       abortControllerRef.current?.abort();
     };
   }, []);
 
   // Scroll al fondo cuando llega un nuevo mensaje
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages triggers scrolling after each new item.
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -73,7 +122,7 @@ export function LegislativoLiteChat() {
 
     const text = input.trim();
 
-    if (!text || isLoading) {
+    if (!text || isLoading || isHistoryLoading || isResetting) {
       return;
     }
 
@@ -98,11 +147,12 @@ export function LegislativoLiteChat() {
     const timeoutId = setTimeout(() => abortController.abort(), 90_000);
 
     try {
-      const response = await fetch("/api/legislativo-chat", {
+      const response = await fetch(LEGISLATIVO_CHAT_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "same-origin",
         signal: abortController.signal,
         body: JSON.stringify({
           messages: nextMessages,
@@ -134,16 +184,22 @@ export function LegislativoLiteChat() {
       };
 
       setMessages((currentMessages) => {
-        if (!mountedRef.current) return currentMessages;
+        if (!mountedRef.current) {
+          return currentMessages;
+        }
         return [...currentMessages, assistantMessage];
       });
     } catch (error) {
       // Componente desmontado — não atualiza estado
-      if (!mountedRef.current) return;
+      if (!mountedRef.current) {
+        return;
+      }
 
       if (error instanceof DOMException && error.name === "AbortError") {
         // Utilizador cancelou manualmente — silencioso
-        if (userStopRef.current) return;
+        if (userStopRef.current) {
+          return;
+        }
         // Timeout — avisa o utilizador
         setErrorMessage(
           "A resposta está a demorar mais do que o esperado. Por favor, tente novamente."
@@ -180,9 +236,40 @@ export function LegislativoLiteChat() {
     setIsLoading(false);
   }
 
-  function handleClear() {
-    setMessages([]);
+  async function handleClear() {
+    if (isLoading || isHistoryLoading || isResetting) {
+      return;
+    }
+
     setErrorMessage("");
+    setIsResetting(true);
+
+    try {
+      const response = await fetch(LEGISLATIVO_CHAT_API_URL, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+
+      if (!response.ok) {
+        throw new Error("Não foi possível iniciar uma nova conversa.");
+      }
+
+      if (mountedRef.current) {
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error("Erro ao iniciar uma nova conversa:", error);
+
+      if (mountedRef.current) {
+        setErrorMessage(
+          "Não foi possível iniciar uma nova conversa. Por favor, tente novamente."
+        );
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsResetting(false);
+      }
+    }
   }
 
   return (
@@ -191,6 +278,7 @@ export function LegislativoLiteChat() {
       <header className="sticky top-0 z-10 border-b border-border/40 bg-background/80 px-4 py-3 backdrop-blur-xl md:px-8">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
+            {/* biome-ignore lint/performance/noImgElement: SVG embeds a PNG that Next Image cannot optimize. */}
             <img
               alt="Gobern.AI"
               className="h-14 w-auto sm:h-16 md:h-20"
@@ -208,6 +296,11 @@ export function LegislativoLiteChat() {
           <div className="flex items-center gap-2">
             {/* Toggle claro/oscuro */}
             <Button
+              aria-label={
+                mounted && theme === "dark"
+                  ? "Mudar para tema claro"
+                  : "Mudar para tema escuro"
+              }
               className="size-9 rounded-xl"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               size="icon"
@@ -222,13 +315,23 @@ export function LegislativoLiteChat() {
             </Button>
 
             <Button
-              disabled={messages.length === 0 || isLoading}
+              data-testid="legislativo-clear-button"
+              disabled={
+                messages.length === 0 ||
+                isLoading ||
+                isHistoryLoading ||
+                isResetting
+              }
               onClick={handleClear}
               type="button"
               variant="outline"
             >
-              <Trash2Icon className="mr-2 size-4" />
-              Limpar
+              {isResetting ? (
+                <Loader2Icon className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Trash2Icon className="mr-2 size-4" />
+              )}
+              {isResetting ? "A limpar" : "Limpar"}
             </Button>
           </div>
         </div>
@@ -238,7 +341,12 @@ export function LegislativoLiteChat() {
       <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8" ref={scrollRef}>
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
           <div className="flex flex-1 flex-col gap-4 rounded-2xl border border-border/40 bg-card/30 p-4">
-            {messages.length === 0 ? (
+            {isHistoryLoading ? (
+              <div className="flex flex-1 items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
+                <Loader2Icon className="size-4 animate-spin" />A carregar
+                histórico...
+              </div>
+            ) : messages.length === 0 ? (
               <div className="flex flex-1 items-center justify-center py-16 text-center text-sm text-muted-foreground">
                 Faça uma pergunta legislativa ou cole um texto para análise
               </div>
@@ -251,6 +359,7 @@ export function LegislativoLiteChat() {
                       ? "ml-auto bg-primary text-primary-foreground"
                       : "mr-auto border border-border/40 bg-background"
                   )}
+                  data-role={message.role}
                   key={message.id}
                 >
                   {message.content}
@@ -280,7 +389,8 @@ export function LegislativoLiteChat() {
           <form className="flex w-full gap-2" onSubmit={handleSubmit}>
             <Textarea
               className="min-h-20 resize-none rounded-2xl"
-              disabled={isLoading}
+              data-testid="legislativo-input"
+              disabled={isLoading || isHistoryLoading || isResetting}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
@@ -294,6 +404,7 @@ export function LegislativoLiteChat() {
 
             {isLoading ? (
               <Button
+                aria-label="Parar resposta"
                 className="h-auto rounded-2xl px-4"
                 onClick={handleStop}
                 type="button"
@@ -303,8 +414,10 @@ export function LegislativoLiteChat() {
               </Button>
             ) : (
               <Button
+                aria-label="Enviar mensagem"
                 className="h-auto rounded-2xl px-4"
-                disabled={!input.trim()}
+                data-testid="legislativo-send-button"
+                disabled={!input.trim() || isHistoryLoading || isResetting}
                 type="submit"
               >
                 <SendIcon className="size-4" />

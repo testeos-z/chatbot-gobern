@@ -27,7 +27,7 @@ This is a fork of the Vercel AI SDK Chatbot template running in **demo mode**. A
 
 - Primary env file is `.env.local` (not `.env`) — used by drizzle config AND playwright config
 - `.env` is gitignored, `.env.example` is the template
-- Legislativo mode requires: `FLOWISE_API_URL`, `FLOWISE_CHATFLOW_ID` (and optional `FLOWISE_API_KEY`)
+- Legislativo mode requires: `FLOWISE_API_URL`, `FLOWISE_CHATFLOW_ID`. `FLOWISE_API_KEY` is required to restore visible history through Flowise's Chat Message API and for protected chatflows.
 - For full functionality: `POSTGRES_URL`, `AUTH_SECRET`, `REDIS_URL`, `BLOB_READ_WRITE_TOKEN`
 - `IS_DEMO=1` enables `/demo` base path mode
 - `PLAYWRIGHT=True` switches AI providers to mocks (test environment detection)
